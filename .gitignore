@@ -1,0 +1,11 @@
+.idea
+bin
+lib
+lib64
+include
+share
+**/__pycache__/**
+*swo
+*swp
+pyvenv.cfg
+**/*.egg-info
