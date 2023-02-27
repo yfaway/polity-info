@@ -29,13 +29,13 @@ def parse_country(country: str) -> OrderedDict:
     data = query(country)
 
     def integer_field(name: str):
-        return [name, '([,\\d]+)']
+        return [name, '[\\D]*([,\\d]+)']
 
     def decimal_number_field(name: str):
         return [name, '([.,\\d]+)']
 
     def rank_field(name: str):
-        return [name, '([\\S]+)\\n']
+        return [name, '([\\S]+)\\s*.*\\n']
 
     def change_indicator_field(name: str):
         return [name, '([\\S]+)\\n']
@@ -45,11 +45,11 @@ def parse_country(country: str) -> OrderedDict:
         return [name, '([^\\n]+)\\n']
 
     def dollar_field(name: str):
-        return [name, '(?:\\{\\{increase\\}\\}){0,1}'
-                      '(?:\\{\\{decrease\\}\\}){0,1}'
-                      '\\s+\\$'
+        return [name, '[\\D]*'
                       '([.,\\d]+'
                       '(?:&nbsp;){0,1}'
+                      '(?:\\{\\{nbsp\\}\\}){0,1}'
+                      '\\s*'
                       '(?:trillion){0,1}(?:billion){0,1}(?:million){0,1})']
 
     # ".*population_estimate\\s*=\\s*([,\\d]+)"]
