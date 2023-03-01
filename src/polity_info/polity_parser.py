@@ -1,6 +1,8 @@
 import re
 from collections import OrderedDict
 import requests
+from io import StringIO
+from html.parser import HTMLParser
 
 
 def query(page: str) -> str:
@@ -35,14 +37,14 @@ def parse_country(country: str) -> OrderedDict:
         return [name, '([.,\\d]+)']
 
     def rank_field(name: str):
-        return [name, '([\\S]+)\\s*.*\\n']
+        return [name, '(\\w+).*\\n']
 
     def change_indicator_field(name: str):
-        return [name, '([\\S]+)\\n']
+        return [name, r'([\S]+)\n']
 
     def text_field(name: str):
         # Match all non-newline char until end of the line.
-        return [name, '([^\\n]+)\\n']
+        return [name, r'([^\n]+)\n']
 
     def dollar_field(name: str):
         return [name, '[\\D]*'
@@ -104,8 +106,49 @@ def parse_country(country: str) -> OrderedDict:
         pattern = f".*{key}\\s*=\\s*{captured_pattern}"
         m = re.match(pattern, data, re.DOTALL)
         if m is not None:
-            result[key] = m.group(1)
+            result[key] = _format_value(m.group(1))
         else:
             result[key] = None
 
     return result
+
+
+def _format_value(text: str) -> str:
+    """" Remove HTML tag, comment tag, and some Wikimedia specific tags. """
+    text = strip_html_tags(text)
+    text = text.replace("{{nbsp}}", ' ')
+
+    # replace wiki link in the format '[[Link|Label]]' with just 'Label'
+    pattern = re.compile(r'(.*)\[\[.*\|([.*]]+)\]\](.*)')
+    while pattern.match(text):
+        text = pattern.sub(r"\1\2\3", text)
+
+    # replace wiki link in the format '[[Label]]' with just 'Label'
+    pattern = re.compile(r'(.*)\[\[(.*)\]\](.*)')
+    while pattern.match(text):
+        text = pattern.sub(r"\1\2\3", text)
+
+    return text
+
+
+class MLStripper(HTMLParser):
+    """ @see https://stackoverflow.com/questions/753052/strip-html-from-strings-in-python """
+    def __init__(self):
+        super().__init__()
+        self.reset()
+        self.strict = False
+        self.convert_charrefs= True
+        self.text = StringIO()
+
+    def handle_data(self, d):
+        self.text.write(d)
+
+    def get_data(self):
+        return self.text.getvalue()
+
+
+def strip_html_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
+
