@@ -62,12 +62,26 @@ def format_countries(countries: typing.List[str], data: typing.List[typing.Dict]
                 'keys': ['GDP_nominal_per_capita', 'GDP_nominal_per_capita_rank']
             },
         ],
+        'GINI': [
+            {
+                'label': 'GINI',
+                'format': "{} ({})",
+                'keys': ['Gini', 'Gini_rank']
+            },
+        ],
+        'HDI': [
+            {
+                'label': 'HDI',
+                'format': "{} ({})",
+                'keys': ['HDI', 'HDI_rank']
+            },
+        ],
     }
 
     result = ''
-    max_key_length = max(map(len, groups.keys()))
+    max_key_length = max(map(len, groups.keys())) + 2  # padding for group members
 
-    format_string = "  {:<" + str(max_key_length + 1) + "}"
+    format_string = "{:<" + str(max_key_length + 1) + "}"
     for _ in countries:
         format_string = format_string + " {:>25}"
 
@@ -76,8 +90,10 @@ def format_countries(countries: typing.List[str], data: typing.List[typing.Dict]
 
     # Now display the actual data
     for group_name in groups.keys():
-        result = result + group_name + "\n"
         rows = groups[group_name]
+
+        if len(rows) > 1:
+            result = result + group_name + "\n"
 
         for row in rows:
             display_data = []
@@ -95,7 +111,10 @@ def format_countries(countries: typing.List[str], data: typing.List[typing.Dict]
                 cell_value = row['format'].format(*values)
                 display_data.append(cell_value)
 
-            result = result + format_string.format(row['label'], *display_data) + '\n'
+            label = row['label']
+            if len(rows) > 1:
+                label = '  ' + label  # padding for group member
+            result = result + format_string.format(label, *display_data) + '\n'
 
     """
     for key in data[0].keys():
