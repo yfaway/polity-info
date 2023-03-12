@@ -1,6 +1,11 @@
 import typing
 
 
+# The terminal colors; add prefix padding to ensure they are of the same length (for str.format()).
+GREEN_COLOR = '\033[32m'
+WHITE_COLOR = ' \033[0m'
+
+
 def format_countries(countries: typing.List[str], data: typing.List[typing.Dict]) -> str:
     """
     Returns a string contains all the data.
@@ -79,39 +84,52 @@ def format_countries(countries: typing.List[str], data: typing.List[typing.Dict]
     }
 
     result = ''
-    max_key_length = max(map(len, groups.keys())) + 2  # padding for group members
 
-    format_string = "{:<" + str(max_key_length + 1) + "}"
+    # Rendering by rows (values) and columns (heading and countries). Each cell value always has the console color
+    # coding (white by default). Highlighted cell value has special color.
+
+    max_key_length = max(map(len, groups.keys())) + len(WHITE_COLOR) + 2  # padding for group members
+
+    format_string = "{:<" + str(max_key_length + len(WHITE_COLOR) + 1) + "}"
     for _ in countries:
-        format_string = format_string + " {:>25}"
+        format_string = format_string + " {:>30}"
 
     # Display row heading
-    result = result + format_string.format('', *countries) + '\n'
+    colored_country_names = [WHITE_COLOR + c for c in countries]
+    result = result + format_string.format(WHITE_COLOR, *colored_country_names) + '\n'
 
     # Now display the actual data
     for group_name in groups.keys():
         rows = groups[group_name]
 
         if len(rows) > 1:
-            result = result + group_name + "\n"
+            result = result + WHITE_COLOR + group_name + "\n"
 
         for row in rows:
             display_data = []
+            keys = row['keys']
+
+            # Find the highlighted value using the gt function based on the first key.
+            first_key = keys[0]
+            highlight_value = data[0][first_key]
+            for col in data:
+                if col[first_key] > highlight_value:
+                    highlight_value = col[first_key]
 
             for col in data:
-                keys = row['keys']
                 values = []
 
+                color = GREEN_COLOR if col[keys[0]] == highlight_value else WHITE_COLOR
                 for key in keys:
                     if col[key] is not None:
-                        values.append(col[key])
+                        values.append(str(col[key].value))
                     else:
-                        values.append('')
+                        values.append(color)  # empty value
 
-                cell_value = row['format'].format(*values)
+                cell_value = color + row['format'].format(*values)
                 display_data.append(cell_value)
 
-            label = row['label']
+            label = WHITE_COLOR + row['label']
             if len(rows) > 1:
                 label = '  ' + label  # padding for group member
             result = result + format_string.format(label, *display_data) + '\n'
